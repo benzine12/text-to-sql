@@ -141,7 +141,9 @@ def ai_request(json_schema):
         **Database Schema:**
 
         ```json
-        {json_schema}"""),
+        {json_schema}
+        ```
+        """),
             contents="Employees with Above-Average Salaries"
         )
 
