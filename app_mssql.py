@@ -114,7 +114,7 @@ def extract_schema(db_conf):
 
     return schema
 
-def ai_request(json_schema):
+def ai_request(json_schema,user_text):
     """
     Function that make a request to AI with parameters.
     model - model of Gemini ai 
@@ -144,17 +144,59 @@ def ai_request(json_schema):
         {json_schema}
         ```
         """),
-            contents="Employees with Above-Average Salaries"
+            contents=user_text
         )
 
-        print(response.text)
+        # print(response.text)
+        return response.text
+    
+    except Exception as e:
+        print(e)
+        return e
+
+def request_to_db(ai_response,db_conf):
+    try:
+        # remove the markdown formatting from the ai response
+        executed_response = "{}".format(ai_response.split('```sql')[1].split('```')[0].strip())
+
+        conn_str = (
+        f"DRIVER={db_conf['driver']};"
+        f"SERVER={db_conf['server']},{db_conf['port']};"
+        f"DATABASE={db_conf['database']};"
+        f"UID={db_conf['user']};"
+        f"PWD={db_conf['password']};"
+        "Encrypt=no;TrustServerCertificate=yes;"
+    )
+        with pyodbc.connect(conn_str, autocommit=True) as conn:
+            cur = conn.cursor()
+            cur.execute(executed_response)
+
+            # Check if it's a SELECT query
+            if executed_response.strip().lower().startswith("select"):
+                columns = [desc[0] for desc in cur.description]
+                rows = cur.fetchall()
+                # Return as list of dicts (optional, for easy JSON export)
+                result = [dict(zip(columns, row)) for row in rows]
+                return {"status": "success", "rows": result}
+            else:
+                # For INSERT/UPDATE/DELETE etc.
+                affected = cur.rowcount
+                return {"status": "success", "rows_affected": affected}
+
+    except pyodbc.Error as e:
+        # Handle database errors
+        return {"status": "error", "message": str(e)}
 
     except Exception as e:
-        return e
+        # Handle unexpected errors
+        return {"status": "error", "message": f"Unexpected error: {e}"}
 
 def main():
     json_schema = json.dumps(extract_schema(DB_CONFIG), indent=2, ensure_ascii=False)
-    ai_request(json_schema)
+    ai_sql = ai_request(json_schema,user_text)
+    print(f"\nThe sql query is :\n{ai_sql}")
+    result = request_to_db(ai_sql, DB_CONFIG)
+    print(f"\nThe database responce for query:\n{result}")
 
 if __name__ == "__main__":
     main()
