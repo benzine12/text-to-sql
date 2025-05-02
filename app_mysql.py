@@ -105,7 +105,9 @@ def ai_request(json_schema):
         **Database Schema:**
 
         ```json
-        {json_schema}"""),
+        {json_schema}
+        ```
+"""),
             contents="List Employees Hired in 2021"
         )
 
