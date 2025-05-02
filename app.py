@@ -3,8 +3,10 @@ from google.genai import types
 import json, os, mysql.connector
 from dotenv import load_dotenv
 
+# load data from .env
 load_dotenv()
 
+# db corfiguration
 DB_CONFIG = {
     "host":     os.getenv("MYSQL_HOST"),
     "database": os.getenv("MYSQL_DATABASE"),
@@ -67,30 +69,36 @@ def extract_schema(db_conf):
             schema[tbl] = tbl_def
     return schema
 
-json_schema = json.dumps(extract_schema(DB_CONFIG), indent=2, ensure_ascii=False)
+def ai_request(json_schema):
 
+    client = genai.Client(api_key=os.getenv("API_KEY"))
 
-client = genai.Client(api_key=os.getenv("API_KEY"))
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        config=types.GenerateContentConfig(
+            system_instruction=f"""Act as an expert Text-to-SQL translator for a MySQL database. You will be given a database schema definition and a natural language question. Your task is to generate the correct MySQL query to answer the question using *only* the provided schema and considering any provided context.
 
-response = client.models.generate_content(
-    model="gemini-2.0-flash",
-    config=types.GenerateContentConfig(
-        system_instruction=f"""Act as an expert Text-to-SQL translator for a MySQL database. You will be given a database schema definition and a natural language question. Your task is to generate the correct MySQL query to answer the question using *only* the provided schema and considering any provided context.
+    **Input Schema Details:**
+    The schema is provided as a JSON object where:
+    - Keys are table names.
+    - Each table value is an object containing:
+        - `columns`: A list of objects, each describing a column (`name`, `type`, `nullable`, `default`).
+        - `primary_key`: A list of column names forming the primary key.
+        - `foreign_keys`: A list of objects, each describing a foreign key relationship (`local_column`, `referenced_table`, `referenced_column`).
 
-**Input Schema Details:**
-The schema is provided as a JSON object where:
-- Keys are table names.
-- Each table value is an object containing:
-    - `columns`: A list of objects, each describing a column (`name`, `type`, `nullable`, `default`).
-    - `primary_key`: A list of column names forming the primary key.
-    - `foreign_keys`: A list of objects, each describing a foreign key relationship (`local_column`, `referenced_table`, `referenced_column`).
+    ---
+    **Database Schema:**
 
----
-**Database Schema:**
+    ```json
+    {json_schema}"""),
+        contents="List Employees Hired in 2021"
+    )
 
-```json
-{json_schema}"""),
-    contents="List Employees Hired in the Last 5 Years"
-)
+    print(response.text)
 
-print(response.text)
+def main():
+    json_schema = json.dumps(extract_schema(DB_CONFIG), indent=2, ensure_ascii=False)
+    ai_request(json_schema)
+
+if __name__ == "__main__":
+    main()
