@@ -1,0 +1,30 @@
+services:
+  backend:
+    build: .
+    container_name: text_to_sql_api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mssql
+    environment:
+      - MSSQL_SERVER=localhost
+      - MSSQL_DATABASE=AdventureWorks2022
+      - MSSQL_USER=sa
+      - MSSQL_PASSWORD=Strong!Passw0rd123
+      - MSSQL_PORT=1433
+      - MSSQL_DRIVER={ODBC Driver 17 for SQL Server}
+
+
+  mssql:
+    image: "archi95/adventureworks2022"
+    container_name: mssql_server
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Strong!Passw0rd123
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+
+volumes:
+  mssql_data:
