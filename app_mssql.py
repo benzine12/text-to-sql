@@ -2,6 +2,9 @@ from google import genai
 from google.genai import types
 import json, os, pyodbc
 from dotenv import load_dotenv
+from flask import Flask, request
+from flask import jsonify
+import json
 
 # load data from .env
 load_dotenv()
@@ -15,6 +18,9 @@ DB_CONFIG = {
     "port":     os.getenv("MSSQL_PORT", "1433"),
     "driver":   os.getenv("MSSQL_DRIVER", "{ODBC Driver 17 for SQL Server}"),
 }
+
+# initialization of flask app
+app = Flask(__name__)
 
 def extract_schema(db_conf):
     """
@@ -191,12 +197,31 @@ def request_to_db(ai_response,db_conf):
         # Handle unexpected errors
         return {"status": "error", "message": f"Unexpected error: {e}"}
 
-def main():
+# test route 
+@app.route('/')
+def test():
+    return jsonify({"msg":"server run"}),200
+
+@app.post('/ask_sql')
+def ask_sql():
+    if request.method == 'POST':
+        if not request.is_json:
+            return jsonify({"msg": "Missing or invalid JSON in request",
+                            "error": "Bad request"}), 400
+        
+    user_text = request.json.get('user_text', None)
+
+    if not user_text:
+        return jsonify({"msg":"No text passed"}),400
+
     json_schema = json.dumps(extract_schema(DB_CONFIG), indent=2, ensure_ascii=False)
     ai_sql = ai_request(json_schema,user_text)
     print(f"\nThe sql query is :\n{ai_sql}")
     result = request_to_db(ai_sql, DB_CONFIG)
     print(f"\nThe database responce for query:\n{result}")
 
+    return jsonify({"query": ai_sql,"db_result": result}),200
+
 if __name__ == "__main__":
-    main()
+    with app.app_context():
+        app.run(debug=True, port=8000, host='0.0.0.0')
