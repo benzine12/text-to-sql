@@ -7,12 +7,12 @@ services:
     depends_on:
       - mssql
     environment:
-      - MSSQL_SERVER=localhost
+      - MSSQL_SERVER=mssql_server
       - MSSQL_DATABASE=AdventureWorks2022
       - MSSQL_USER=sa
       - MSSQL_PASSWORD=Strong!Passw0rd123
       - MSSQL_PORT=1433
-      - MSSQL_DRIVER={ODBC Driver 17 for SQL Server}
+      - MSSQL_DRIVER={ODBC Driver 18 for SQL Server}
 
 
   mssql:
