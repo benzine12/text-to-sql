@@ -202,6 +202,7 @@ def request_to_db(ai_response,db_conf):
 def test():
     return jsonify({"msg":"server run"}),200
 
+# route that get the text and send it to ai, return sql query and result from the db.
 @app.post('/ask_sql')
 def ask_sql():
     if request.method == 'POST':
