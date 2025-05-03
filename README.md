@@ -57,7 +57,7 @@ The service is containerized using Docker and includes a ready-to-use AdventureW
    cd text-to-sql
    ```
 
-2. Create a `.env` file with your API key:
+2. Add a Gemini API key to `.env` file:
    ```bash
    API_KEY=your_google_gemini_api_key
    ```
